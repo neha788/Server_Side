@@ -367,6 +367,59 @@ const run = async () => {
             res.send(result)
         })
 
+        //Stripe Payment method
+        app.post('/create-payment-intent', async (req, res) => {
+            const service = req.body
+            const price = service.price
+            const amount = price * 100
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        })
+        app.get('/payment/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const order = await ordersCollection.findOne(query)
+            res.send(order)
+        })
+
+        app.put('/ship/:id', async (req, res) => {
+            const id = req.params.id;
+            const order = req.body;
+            const options = { upsert: true }
+            const filter = { _id: ObjectId(id) }
+            //  console.log(filter,"filter email");
+            const updateDoc = {
+                $set: {
+                    isDeliverd: true
+                }
+
+            };
+            const result = await ordersCollection.updateOne(filter, updateDoc, options)
+
+            res.send(result)
+
+        })
+
+        app.patch('/orderPay/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id
+            const payment = req.body
+            const filter = { _id: ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                },
+            };
+            const updateOrder = await ordersCollection.updateOne(filter, updateDoc)
+            const result = await paymentCollection.insertOne(payment)
+            res.send(updateOrder)
+        })
+
+
 
 
     } finally {

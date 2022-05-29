@@ -428,7 +428,19 @@ const run = async () => {
             res.send(blogs);
         });
 
+        //token
 
+        app.post('/signin', async (req, res) => {
+            const user = req.body;
+            // console.log(req.body, 'user')
+
+            const getToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1d'
+            });
+
+            res.send({ getToken });
+
+        })
 
     } finally {
         // client.close(); 

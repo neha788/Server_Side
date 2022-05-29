@@ -234,6 +234,140 @@ const run = async () => {
             }
         });
 
+        //API to delete order USER
+        app.delete("/orders/:id", verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const id = req.params.id;
+            const email = req.headers.email;
+            if (decodedEmail) {
+
+                const result = await ordersCollection.deleteOne({ _id: ObjectId(id) });
+                res.send(result);
+            } else {
+                res.send("Unauthorized access");
+            }
+        });
+
+        //API to get order by email
+        app.get('/orders/:email', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email
+            const email = req.params.email
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const cursor = ordersCollection.find(query)
+                const items = await cursor.toArray()
+                res.send(items)
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+        })
+
+        //API to get user by user email
+        app.get('/user/:email', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const email = req.params.email;
+            // console.log("email", email);
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const cursor = userCollection.find(query)
+                const items = await cursor.toArray()
+                res.send(items)
+            }
+            else {
+                console.log('param');
+                return res.status(403).send({ message: 'forbidden access' })
+
+            }
+        })
+
+        //API to manage order
+        app.get("/orders", async (req, res) => {
+            const orders = await ordersCollection.find({}).toArray();
+            res.send(orders);
+        });
+
+        //API to get all reviews 
+        app.get("/reviews", async (req, res) => {
+            const reviews = await reviewsCollection.find({}).toArray();
+            res.send(reviews);
+        });
+        //API to post a review 
+        app.post('/reviews', async (req, res) => {
+            const newReview = req.body;
+            console.log(newReview);
+            const result = await reviewsCollection.insertOne(newReview);
+            res.send(result)
+        })
+        //API to post a product 
+        app.post("/product", verifyJWT, verifyAdmin, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const email = req.headers.email;
+            if (email === decodedEmail) {
+                const product = req.body;
+                await toolsCollection.insertOne(product);
+                res.send(product);
+            } else {
+                res.send("Unauthorized access");
+            }
+        });
+
+        //products add
+        app.post('/tools', verifyJWT, verifyAdmin, async (req, res) => {
+            const parts = req.body
+            const result = await toolsCollection.insertOne(parts)
+            res.send(result)
+        })
+
+
+        //API to get all user
+        app.get('/user', verifyJWT, async (req, res) => {
+            const users = await userCollection.find().toArray()
+            res.send(users)
+        })
+
+        //put API to update an user
+        app.put("/user/:id", verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            // const email = req.headers.email;
+            if (decodedEmail) {
+                const id = req.params.id;
+                const user = req.body;
+                const options = { upsert: true };
+                await userCollection.updateOne(
+                    { _id: ObjectId(id) },
+                    {
+                        $set: {
+                            user
+                        }
+                    },
+                    options
+                );
+                res.send(user);
+            } else {
+                res.send("Unauthorized access");
+            }
+        })
+
+
+
+        app.put('/tools/:id', async (req, res) => {
+            const id = req.params.id
+            const updateProduct = req.body
+            // console.log(updateProduct);
+            const query = { _id: ObjectId(id) }
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    availableQuantity: updateProduct.newQuantity
+                }
+            }
+
+            const result = await toolsCollection.updateOne(query, updateDoc, options)
+            res.send(result)
+        })
+
+
 
     } finally {
         // client.close(); 
